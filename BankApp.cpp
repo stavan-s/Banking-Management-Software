@@ -67,13 +67,88 @@ class Crypt {
 
 };
 
+
+// Function that returns the current balance of an account
+string getCurrentBalance(string accountNumber) {
+
+    ifstream DatabaseFile("data.txt", ios :: in);
+    Crypt c;
+
+    string inp_line, balance = "";
+    accountNumber = c.encryptText(accountNumber);
+
+    while(getline(DatabaseFile, inp_line)) {
+
+        if(inp_line.substr(13, 12) == accountNumber) {
+
+            for(int i = 0, j = inp_line.length() - 1; i < j; i++, j--) {
+                char temp = inp_line[i];
+                inp_line[i] = inp_line[j];
+                inp_line[j] = temp;
+            }
+
+            int i = 0;
+
+            while(inp_line[i] != ';') {
+                balance += inp_line[i];
+                i++;
+            }
+
+            for(int i = 0, j = balance.length() - 1; i < j; i++, j--) {
+                char temp = balance[i];
+                balance[i] = balance[j];
+                balance[j] = temp;
+            }
+
+            return balance;
+            
+        }
+        
+    }
+
+    return "\nAccount number not found";
+    
+}
+
+
+string getAccountNumber(string aadharNumber) {
+
+    Crypt c;
+
+    ifstream DatabaseFile("data.txt", ios :: in);
+    string inpLine;
+    aadharNumber = c.encryptText(aadharNumber);
+
+    while(getline(DatabaseFile, inpLine)) {
+
+        if(inpLine.substr(0, 12) == aadharNumber) {
+            DatabaseFile.close();
+            return c.decryptText(inpLine.substr(13, 12));   
+        }
+    }
+    DatabaseFile.close();
+    return "\nAccount not found";
+    
+}
+
+// Function to convert the provided string in lowercase
+char to_lowercase(char c) {
+
+    if(c >= 'A' && c <= 'Z') {
+        return c + 32;
+    }
+
+    return c;
+    
+}
+
 // Check whether the given file exists
 bool fileExists(string &name) {
     ifstream File(name.c_str());
     return File.good();    
 }
 
- bool idExists(string Id) {
+ bool aadharNumberExists(string Id) {
 
     Crypt c;
 
@@ -111,16 +186,8 @@ bool accountNumberExists(string num) {
 
     while(getline(ReadDatabase, inpLine)) {
 
-        for(int i = 0; i < inpLine.length()/2; i++) {
-            swap(inpLine[i], inpLine[inpLine.length() - i - 1]);
-        }
-
-        for(int i = 0; i < 12; i++) {
+        for(int i = 13; i < 25; i++) {
             tempString += inpLine[i];
-        }
-
-        for(int i = 0; i < tempString.length()/2; i++) {
-            swap(tempString[i], tempString[tempString.length() - i - 1]);
         }
 
         if(c.decryptText(tempString) == num){
@@ -145,16 +212,8 @@ bool phoneNumberExists(string number) {
 
     while(getline(ReadDatabase, inpLine)) {
 
-        for(int i = 0; i < inpLine.length()/2; i++) {
-            swap(inpLine[i], inpLine[inpLine.length() - i - 1]);
-        }
-
-        for(int i = 13; i < 23; i++) {
+        for(int i = 26; i < 36; i++) {
             tempString += inpLine[i];
-        }
-
-        for(int i = 0; i < tempString.length()/2; i++) {
-            swap(tempString[i], tempString[tempString.length() - i - 1]);
         }
 
         if(c.decryptText(tempString) == number){
@@ -214,7 +273,7 @@ void createNewAccount() {
     if(aadharNumber.length() != 12) {
         cout<<"\nAadhar number is not valid"<<endl;
     }
-    else if(!idExists(aadharNumber)) {
+    else if(!aadharNumberExists(aadharNumber)) {
 
         cout<<"\nEnter your Name -> ";
         string name;
@@ -242,9 +301,15 @@ void createNewAccount() {
             return;
         }
 
-        string accountNumber = generateAccountNumber();
+        for(char &c : name) {
+            c = to_lowercase(c);
+        }
 
-        WriteFile << c.encryptText(aadharNumber) << ";" << name << ";" << surname << ";" << c.encryptText(phoneNumber) << ";" << c.encryptText(accountNumber) << ";";
+        for(char &c : surname) {
+            c = to_lowercase(c);
+        }
+
+        string accountNumber = generateAccountNumber();
 
         cout<<"\nNew Account Successfully created!!"<<endl;
         cout<<"\nYour account number is -> "<<accountNumber<<endl<<endl;
@@ -264,12 +329,232 @@ void createNewAccount() {
             cin>>UpiId;
         }
 
-        WriteFile << c.encryptText(UpiId) << endl;
+        WriteFile <<  c.encryptText(aadharNumber) << ";" << c.encryptText(accountNumber) << ";" << c.encryptText(phoneNumber) << ";" << c.encryptText(UpiId) << ";" << name << ";" << surname << ";" << "0" << endl;
+        WriteFile.close();
+
+        cout<<"\nUPI Pin registered Successfully!!"<<endl;
+        cout<<"\nYour UPI Id is -> "<<name<<aadharNumber.substr(6, aadharNumber.length()-1 )<<"@sbank"<<endl;
+
     }
     else {
-        cout<<"\nYou already have an account in our bank!!"<<endl;
+        cout<<"\nThis details are already registered in an account!!"<<endl;
+        WriteFile.close();
         return;
     }
+}
+
+void depositMoney(string accountNumber) {
+
+    Crypt c;
+
+    ifstream DatabaseFile("data.txt", ios :: in);
+    string moneyToBeAdded, inpLine;
+    bool found = false;
+    int lineNumber = 0;
+
+    while(getline(DatabaseFile, inpLine)) {
+        string subStr = inpLine.substr(13, 12);
+        lineNumber++;
+        if(c.decryptText(subStr) == accountNumber) {
+            found = true;
+            break;
+        }
+    }
+
+    DatabaseFile.close();
+
+    if(!found) {
+        cout<<"\nAccount number not registered in the bank"<<endl;
+        return;
+    }
+
+    // If account number exists, code below to deposit money 
+    // (rewrite the whole file)
+
+    ifstream DBFILE("data.txt", ios :: in);
+    ofstream TempFile("temp.txt", ios :: out);
+
+    string lineToStore;
+
+    while(--lineNumber) {
+        getline(DBFILE, lineToStore);
+        TempFile << lineToStore << endl;
+    }
+
+    getline(DBFILE, lineToStore);
+
+    DBFILE.close();
+    DatabaseFile.close();
+
+    string lineToChange = "";
+
+    cout<<"\nEnter the amount to be deposited in the account -> ";
+    string amount;
+    cin>>amount;
+
+    lineToChange += lineToStore.substr(0, 43);
+
+    TempFile << lineToChange << ";";
+
+    int j = 44;
+
+    while(lineToStore[j] != ';') {
+        TempFile << lineToStore[j];
+        j++;
+    }
+    
+    TempFile << ";";
+
+    j++;
+
+    while(lineToStore[j] != ';') {
+        TempFile << lineToStore[j];
+        j++;
+    }
+
+    TempFile << ";";
+    j++;
+
+    string currentAmount = "";
+
+    while(j != lineToStore.length()) {
+        currentAmount += lineToStore[j];
+        j++;
+    }
+
+    int newAmount = stoi(currentAmount) + stoi(amount);
+
+    TempFile << newAmount << endl;
+
+    ifstream DataFile("data.txt", ios :: in);
+
+    lineNumber = 0;
+
+    while(getline(DataFile, inpLine)) {
+        string subStr = inpLine.substr(13, 12);
+        if(c.decryptText(subStr) == accountNumber) {
+            break;
+        }
+    }
+
+    while(getline(DataFile, inpLine)) {
+        TempFile << inpLine << endl;
+    }
+
+    DataFile.close();
+    TempFile.close();
+
+    remove("data.txt");
+    rename("temp.txt", "data.txt");
+
+    cout<<"\nTransaction Successful!!"<<endl;
+}
+
+void withdrawMoney(string accountNumber) {
+
+    Crypt c;
+
+    ifstream DatabaseFile("data.txt", ios :: in);
+    string moneyToBeAdded, inpLine;
+    bool found = false;
+    int lineNumber = 0;
+
+    while(getline(DatabaseFile, inpLine)) {
+        string subStr = inpLine.substr(13, 12);
+        lineNumber++;
+        if(c.decryptText(subStr) == accountNumber) {
+            found = true;
+            break;
+        }
+    }
+
+    DatabaseFile.close();
+
+    if(!found) {
+        cout<<"\nAccount number not registered in the bank"<<endl;
+        return;
+    }
+
+    // If account number exists, code below to deposit money 
+    // (rewrite the whole file)
+
+    ifstream DBFILE("data.txt", ios :: in);
+    ofstream TempFile("temp.txt", ios :: out);
+
+    string lineToStore;
+
+    while(--lineNumber) {
+        getline(DBFILE, lineToStore);
+        TempFile << lineToStore << endl;
+    }
+
+    getline(DBFILE, lineToStore);
+
+    DBFILE.close();
+    DatabaseFile.close();
+
+    string lineToChange = "";
+
+    cout<<"\nEnter the amount to withdraw from the account -> ";
+    string amount;
+    cin>>amount;
+
+    lineToChange += lineToStore.substr(0, 43);
+
+    TempFile << lineToChange << ";";
+
+    int j = 44;
+
+    while(lineToStore[j] != ';') {
+        TempFile << lineToStore[j];
+        j++;
+    }
+    
+    TempFile << ";";
+
+    j++;
+
+    while(lineToStore[j] != ';') {
+        TempFile << lineToStore[j];
+        j++;
+    }
+
+    TempFile << ";";
+    j++;
+
+    string currentAmount = "";
+
+    while(j != lineToStore.length()) {
+        currentAmount += lineToStore[j];
+        j++;
+    }
+
+    int newAmount = stoi(currentAmount) - stoi(amount);
+
+    TempFile << newAmount << endl;
+
+    ifstream DataFile("data.txt", ios :: in);
+
+    lineNumber = 0;
+
+    while(getline(DataFile, inpLine)) {
+        string subStr = inpLine.substr(13, 12);
+        if(c.decryptText(subStr) == accountNumber) {
+            break;
+        }
+    }
+
+    while(getline(DataFile, inpLine)) {
+        TempFile << inpLine << endl;
+    }
+
+    DataFile.close();
+    TempFile.close();
+
+    remove("data.txt");
+    rename("temp.txt", "data.txt");
+
+    cout<<"\nTransaction Successful!!"<<endl;
 }
 
 
@@ -285,6 +570,10 @@ int main() {
         cout<<"------ Welcome ------"<<endl;
 
         cout<<"\n1. Create a new account"<<endl;
+        cout<<"2. Check balance of an account"<<endl;
+        cout<<"3. Get to know a registered account's number"<<endl;
+        cout<<"4. Deposit money into an account"<<endl;
+        cout<<"5. Withdraw money from an account"<<endl;
         cout<<"0. Exit"<<endl;
 
         cout<<"\nEnter your choice -> ";
@@ -294,11 +583,55 @@ int main() {
         switch (choice)
         {
         case 0:
-            break;
+            return 0;
         
         case 1:
             {
                 createNewAccount();
+                break;
+            }
+
+        case 2:
+            {
+                system("cls");
+                cout<<"Enter the account number -> ";
+                string accountNumber;
+                cin.ignore();
+                getline(cin, accountNumber);
+                cout<<getCurrentBalance(accountNumber)<<endl;
+                break;
+            }
+
+        case 3:
+            {
+                system("cls");
+                cout<<"Enter the aadhar number -> ";
+                string aadharNumber;
+                cin.ignore();
+                getline(cin, aadharNumber);
+                cout<<getAccountNumber(aadharNumber)<<endl;
+                break;
+            }
+
+        case 4:
+            {
+                system("cls");
+                cout<<"Enter the account number -> ";
+                string accountNumber;
+                cin.ignore();
+                getline(cin, accountNumber);
+                depositMoney(accountNumber);
+                break;
+            }
+
+        case 5:
+            {
+                system("cls");
+                cout<<"Enter the account number -> ";
+                string accountNumber;
+                cin.ignore();
+                getline(cin, accountNumber);
+                withdrawMoney(accountNumber);
                 break;
             }
         
