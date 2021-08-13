@@ -389,7 +389,7 @@ void depositMoney(string accountNumber) {
     string lineToChange = "";
 
     cout<<"\nEnter the amount to be deposited in the account -> ";
-    string amount;
+    int amount;
     cin>>amount;
 
     lineToChange += lineToStore.substr(0, 43);
@@ -422,7 +422,7 @@ void depositMoney(string accountNumber) {
         j++;
     }
 
-    int newAmount = stoi(currentAmount) + stoi(amount);
+    int newAmount = stoi(currentAmount) + amount;
 
     TempFile << newAmount << endl;
 
@@ -448,7 +448,9 @@ void depositMoney(string accountNumber) {
     rename("temp.txt", "data.txt");
 
     cout<<"\nTransaction Successful!!"<<endl;
+    cout<<"\nYour current balance is -> "<<getCurrentBalance(accountNumber)<<endl;
 }
+
 
 void withdrawMoney(string accountNumber) {
 
@@ -458,11 +460,25 @@ void withdrawMoney(string accountNumber) {
     string moneyToBeAdded, inpLine;
     bool found = false;
     int lineNumber = 0;
+    string upiId = "", upiPin;
 
     while(getline(DatabaseFile, inpLine)) {
         string subStr = inpLine.substr(13, 12);
         lineNumber++;
         if(c.decryptText(subStr) == accountNumber) {
+            int j = 44;
+            while(inpLine[j] != ';') {
+                upiId += inpLine[j];
+                j++;
+            }
+
+            string aadharNum = inpLine.substr(0, 12);
+            aadharNum = c.decryptText(aadharNum);
+            upiId += aadharNum.substr(6, 6) + "@sbank";
+
+            upiPin = inpLine.substr(37, 6);
+            upiPin = c.decryptText(upiPin);
+
             found = true;
             break;
         }
@@ -475,86 +491,118 @@ void withdrawMoney(string accountNumber) {
         return;
     }
 
-    // If account number exists, code below to deposit money 
-    // (rewrite the whole file)
-
-    ifstream DBFILE("data.txt", ios :: in);
-    ofstream TempFile("temp.txt", ios :: out);
-
-    string lineToStore;
-
-    while(--lineNumber) {
-        getline(DBFILE, lineToStore);
-        TempFile << lineToStore << endl;
-    }
-
-    getline(DBFILE, lineToStore);
-
-    DBFILE.close();
-    DatabaseFile.close();
-
-    string lineToChange = "";
-
+    jumpHere:
+    
     cout<<"\nEnter the amount to withdraw from the account -> ";
-    string amount;
+    int amount;
     cin>>amount;
 
-    lineToChange += lineToStore.substr(0, 43);
+    int currentBalance = stoi(getCurrentBalance(accountNumber));
 
-    TempFile << lineToChange << ";";
+    if(amount < 0) {
+        cout<<"\nPlease enter some valid amount"<<endl;
+        goto jumpHere;
+    }
 
-    int j = 44;
+    else if(amount <= currentBalance) {
 
-    while(lineToStore[j] != ';') {
-        TempFile << lineToStore[j];
-        j++;
+        string enteredUpiId, enteredUpiPin;
+
+        cout<<"\nEnter your Upi Id -> ";
+        cin>>enteredUpiId;
+        cout<<"\nEnter your Upi Pin -> ";
+        cin>>enteredUpiPin;
+
+        if(upiId == enteredUpiId && upiPin == enteredUpiPin) {
+
+            ifstream DBFILE("data.txt", ios :: in);
+            ofstream TempFile("temp.txt", ios :: out);
+
+            string lineToStore;
+
+            while(--lineNumber) {
+                getline(DBFILE, lineToStore);
+                TempFile << lineToStore << endl;
+            }
+
+            getline(DBFILE, lineToStore);
+
+            DBFILE.close();
+            DatabaseFile.close();
+
+            string lineToChange = "";
+
+            lineToChange += lineToStore.substr(0, 43);
+
+            TempFile << lineToChange << ";";
+
+            int j = 44;
+
+            while(lineToStore[j] != ';') {
+                TempFile << lineToStore[j];
+                j++;
+            }
+            
+            TempFile << ";";
+
+            j++;
+
+            while(lineToStore[j] != ';') {
+                TempFile << lineToStore[j];
+                j++;
+            }
+
+            TempFile << ";";
+            j++;
+
+            string currentAmount = "";
+
+            while(j != lineToStore.length()) {
+                currentAmount += lineToStore[j];
+                j++;
+            }
+
+            int newAmount = stoi(currentAmount) - amount;
+
+            TempFile << newAmount << endl;
+
+            ifstream DataFile("data.txt", ios :: in);
+
+            lineNumber = 0;
+
+            while(getline(DataFile, inpLine)) {
+                string subStr = inpLine.substr(13, 12);
+                if(c.decryptText(subStr) == accountNumber) {
+                    break;
+                }
+            }
+
+            while(getline(DataFile, inpLine)) {
+                TempFile << inpLine << endl;
+            }
+
+            DataFile.close();
+            TempFile.close();
+
+            remove("data.txt");
+            rename("temp.txt", "data.txt");
+
+            cout<<"\nTransaction Successful!!"<<endl;
+            cout<<"\nYour current balance is -> "<<getCurrentBalance(accountNumber)<<endl;
+
+        }
+
+        else {
+            cout<<"\nIncorrect Credentials!!"<<endl;
+            return;
+        }
+        
     }
     
-    TempFile << ";";
-
-    j++;
-
-    while(lineToStore[j] != ';') {
-        TempFile << lineToStore[j];
-        j++;
+    else {
+        cout<<"\nNot enough money to withdraw!!"<<endl;
+        cout<<"\nYour current balance is -> "<<getCurrentBalance(accountNumber)<<endl;
     }
-
-    TempFile << ";";
-    j++;
-
-    string currentAmount = "";
-
-    while(j != lineToStore.length()) {
-        currentAmount += lineToStore[j];
-        j++;
-    }
-
-    int newAmount = stoi(currentAmount) - stoi(amount);
-
-    TempFile << newAmount << endl;
-
-    ifstream DataFile("data.txt", ios :: in);
-
-    lineNumber = 0;
-
-    while(getline(DataFile, inpLine)) {
-        string subStr = inpLine.substr(13, 12);
-        if(c.decryptText(subStr) == accountNumber) {
-            break;
-        }
-    }
-
-    while(getline(DataFile, inpLine)) {
-        TempFile << inpLine << endl;
-    }
-
-    DataFile.close();
-    TempFile.close();
-
-    remove("data.txt");
-    rename("temp.txt", "data.txt");
-
-    cout<<"\nTransaction Successful!!"<<endl;
 }
 
 
