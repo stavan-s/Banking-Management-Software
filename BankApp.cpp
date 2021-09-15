@@ -6,13 +6,16 @@ using namespace std;
 
 class Crypt {
 
+    string encryptedString, decryptedString;
+    int i;
+
     public:
 
     // Encryption algorithm for encrypting aadhar number
     string encryptText(string textString) {
 
-        string encryptedString = "";
-        int i = 0;
+        encryptedString = "";
+        i = 0;
 
         for(char c : textString) {
 
@@ -40,8 +43,8 @@ class Crypt {
     // Decryption algorithm for decrypting aadhar number
     string decryptText(string textString) {
 
-        string decryptedString = "";
-        int i = 0;
+        decryptedString = "";
+        i = 0;
 
         for(char c : textString) {
 
@@ -67,6 +70,36 @@ class Crypt {
 
 };
 
+bool isPasswordValid(string pass) {
+
+    int alphabetCount = 0, digitCount = 0, specialCharacterCount = 0;
+
+    if(pass.length() < 10) {
+        cout<<pass.length()<<endl;
+        return false;
+    }
+    else {
+        for(char c : pass) {
+        
+            if(c >= 65 && c <= 90 || c >= 97 && c <= 122) {
+                alphabetCount++;
+            }
+            else if(c >= 48 && c <= 57){
+                digitCount++;
+            }
+            else {
+                specialCharacterCount++;
+            }
+        }
+
+        if(alphabetCount >= 5 && digitCount >= 3 && specialCharacterCount >= 2 )
+            return true;
+        else 
+            return false;
+        
+    }
+    
+}
 
 // Function that returns the current balance of an account
 string getCurrentBalance(string accountNumber) {
@@ -143,7 +176,7 @@ char to_lowercase(char c) {
 }
 
 // Check whether the given file exists
-bool fileExists(string &name) {
+bool fileExists(const string &name) {
     ifstream File(name.c_str());
     return File.good();    
 }
@@ -174,7 +207,6 @@ bool fileExists(string &name) {
     return false;
      
 }
-
 
 bool accountNumberExists(string num) {
 
@@ -609,9 +641,104 @@ void withdrawMoney(string accountNumber) {
 // main function
 int main() {
 
-    bool check_termination = false;
+    string adminPassword;
+    Crypt c;
+    bool passValid = false;
+    int numberOfTries = 1;
 
-    while(true) {
+    restartPoint:
+
+    system("cls");
+
+    if(!fileExists("shadow.txt")) {
+
+        Here:
+
+        ofstream PasswordFile("shadow.txt", ios :: out);
+
+        cout<<"Please set a password that contains the following:"<<endl;
+        cout<<"-> at least 5 alphabets,"<<endl;
+        cout<<"-> at least 3 digits,"<<endl;
+        cout<<"-> at least 2 special characters."<<endl;
+        cout<<"\nEnter the password -> ";
+        
+        getline(cin, adminPassword);
+
+        if(isPasswordValid(adminPassword)) {
+            string password = c.encryptText(adminPassword);
+
+            PasswordFile << password;
+
+            cout<<"\nPassword Registered Successfully!!"<<endl;
+
+            system("pause");
+            PasswordFile.close();
+            exit(0);
+        }
+        else {
+            system("cls");
+            cout<<"\nTry again with a stronger password...\n\n";
+            goto Here;
+        }
+    }
+    else {
+
+        ifstream PassFile("shadow.txt", ios :: in);
+        string checkPasswordExists;
+
+        getline(PassFile, checkPasswordExists);
+
+        PassFile.close();
+
+        checkPasswordExists = c.decryptText(checkPasswordExists);
+
+        if(!isPasswordValid(checkPasswordExists)) {
+
+            remove("shadow.txt");
+            goto restartPoint;
+            
+        }
+
+        ifstream PasswordFile("shadow.txt", ios :: in);
+        
+        string adminPassword, enteredPassword;
+
+        getline(PasswordFile, adminPassword);
+
+        PasswordFile.close();
+
+        system("cls");
+
+        jumpHereForAnotherTry:
+
+        cout<<"\nEnter the admin password to access the software -> ";
+        cin>>enteredPassword;
+
+        if(enteredPassword == c.decryptText(adminPassword)) {
+            passValid = true;
+        }
+        else {
+            system("cls");
+            
+            if(numberOfTries < 3) {
+                numberOfTries++;
+                cout<<"\nTry again..."<<endl;
+                cout<<4-numberOfTries<<" tries left!!"<<endl;
+                goto jumpHereForAnotherTry;
+            }
+            else if(numberOfTries == 3) {
+                cout<<"\nOut of tries!!"<<endl<<endl;
+                system("pause");
+                return 0;
+            }
+
+        }
+    }
+
+    if(passValid) {
+        bool check_termination = false;
+
+        while(true) {
 
         system("cls");
 
@@ -699,4 +826,6 @@ int main() {
     }
 
     return 0;
+    }
+    
 }
