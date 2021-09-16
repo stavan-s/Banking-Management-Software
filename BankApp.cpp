@@ -353,19 +353,28 @@ void createNewAccount() {
         cout<<"\n--- Set UPI pin for your account ---"<<endl;
         cout<<"\n(Pin must contain all 6 digits)"<<endl;
         cout<<"\nEnter the pin -> ";
-        string UpiId;
-        cin>>UpiId;
+        string UpiPin;
+        cin>>UpiPin;
 
-        while(UpiId.length() != 6) {
+        while(UpiPin.length() != 6) {
             cout<<"\nEnter the pin properly as mentioned -> ";
-            cin>>UpiId;
+            cin>>UpiPin;
         }
 
-        WriteFile <<  c.encryptText(aadharNumber) << ";" << c.encryptText(accountNumber) << ";" << c.encryptText(phoneNumber) << ";" << c.encryptText(UpiId) << ";" << name << ";" << surname << ";" << "0" << endl;
+        string reEnterUpiPin;
+        cout<<"\nReEnter the upi pin -> ";
+        cin>>reEnterUpiPin;
+
+        if(UpiPin != reEnterUpiPin) {
+            cout<<"\nPin doesn't match!!"<<endl;
+            return;
+        }
+
+        WriteFile <<  c.encryptText(aadharNumber) << ";" << c.encryptText(accountNumber) << ";" << c.encryptText(phoneNumber) << ";" << c.encryptText(UpiPin) << ";" << name << ";" << surname << ";" << "0" << endl;
         WriteFile.close();
 
         cout<<"\nUPI Pin registered Successfully!!"<<endl;
-        cout<<"\nYour UPI Id is -> "<<name<<aadharNumber.substr(6, aadharNumber.length()-1 )<<"@sbank"<<endl;
+        cout<<"\nYour UPI Id is -> "<<name<<aadharNumber.substr(6, aadharNumber.length()-1 )<<"@Sbank"<<endl;
 
     }
     else {
@@ -637,6 +646,40 @@ void withdrawMoney(string accountNumber) {
     }
 }
 
+void deleteAccount(const string aadharNumber) {
+
+    ifstream ReadFile("data.txt", ios :: in);
+    ofstream WriteFile("temp.txt", ios :: out);
+
+    bool numberReached = false;
+    string checkingLine, checkingNumber;
+    Crypt c;
+
+    while(getline(ReadFile, checkingLine)) {
+
+        checkingNumber = checkingLine.substr(0, 12);
+        checkingNumber = c.decryptText(checkingNumber);
+
+        cout<<checkingNumber<<endl;
+
+        if(checkingNumber != aadharNumber) 
+            WriteFile << checkingLine << endl;
+        else
+            break;
+    }
+
+    while(getline(ReadFile, checkingLine))
+        WriteFile << checkingLine << endl;
+    
+    cout<<"\nAccount successfully deleted from the database!!"<<endl;
+
+    ReadFile.close();
+    WriteFile.close();
+
+    remove("data.txt");
+    rename("temp.txt", "data.txt");
+    
+}
 
 // main function
 int main() {
@@ -749,6 +792,7 @@ int main() {
         cout<<"3. Get to know a registered account's number"<<endl;
         cout<<"4. Deposit money into an account"<<endl;
         cout<<"5. Withdraw money from an account"<<endl;
+        cout<<"6. Delete an account"<<endl;
         cout<<"0. Exit"<<endl;
 
         cout<<"\nEnter your choice -> ";
@@ -807,6 +851,20 @@ int main() {
                 cin.ignore();
                 getline(cin, accountNumber);
                 withdrawMoney(accountNumber);
+                break;
+            }
+        
+        case 6:
+            {
+                system("cls");
+                cout<<"Enter the aadhar number of the account -> ";
+                string aadharNumber;
+                cin>>aadharNumber;
+                if(!aadharNumberExists(aadharNumber)) {
+                    cout<<"\nThis aadhar number "<<aadharNumber<<" is not linked with any account!!"<<endl;
+                    break;
+                }
+                deleteAccount(aadharNumber);
                 break;
             }
         
