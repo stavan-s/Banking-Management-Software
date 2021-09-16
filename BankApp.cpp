@@ -515,7 +515,7 @@ void withdrawMoney(string accountNumber) {
 
             string aadharNum = inpLine.substr(0, 12);
             aadharNum = c.decryptText(aadharNum);
-            upiId += aadharNum.substr(6, 6) + "@sbank";
+            upiId += aadharNum.substr(6, 6) + "@Sbank";
 
             upiPin = inpLine.substr(37, 6);
             upiPin = c.decryptText(upiPin);
@@ -660,13 +660,11 @@ void deleteAccount(const string aadharNumber) {
         checkingNumber = checkingLine.substr(0, 12);
         checkingNumber = c.decryptText(checkingNumber);
 
-        cout<<checkingNumber<<endl;
-
         if(checkingNumber != aadharNumber) 
             WriteFile << checkingLine << endl;
         else
             break;
-    }
+    } 
 
     while(getline(ReadFile, checkingLine))
         WriteFile << checkingLine << endl;
@@ -861,7 +859,7 @@ int main() {
                 string aadharNumber;
                 cin>>aadharNumber;
                 if(!aadharNumberExists(aadharNumber)) {
-                    cout<<"\nThis aadhar number "<<aadharNumber<<" is not linked with any account!!"<<endl;
+                    cout<<"\nAadhar number -> "<<aadharNumber<<" is not linked with any account!!"<<endl;
                     break;
                 }
                 deleteAccount(aadharNumber);
